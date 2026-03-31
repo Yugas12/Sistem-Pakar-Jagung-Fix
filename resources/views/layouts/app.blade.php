@@ -68,6 +68,7 @@
 </head>
 <body>
 
+
 <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
@@ -82,6 +83,7 @@
         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
             <ul class="navbar-nav align-items-center">
 
+                <!-- MENU UMUM -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ route('home') }}">Home</a>
                 </li>
@@ -90,19 +92,22 @@
                     <a class="nav-link {{ request()->is('diagnosis') ? 'active' : '' }}" href="{{ route('diagnosis') }}">Diagnosis</a>
                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->is('penyakit') ? 'active' : '' }}" href="{{ route('penyakit') }}">Informasi Penyakit</a>
-                </li>
+                <!-- <li class="nav-item"> -->
+                    <!-- <a class="nav-link {{ request()->is('penyakit') ? 'active' : '' }}" href="{{ route('penyakit') }}">Informasi Penyakit</a> -->
+                <!-- </li> -->
 
-                <!-- MENU RIWAYAT -->
+                <!-- MENU RIWAYAT (HANYA JIKA LOGIN) -->
+                @auth
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('riwayat') ? 'active' : '' }}" href="{{ route('riwayat') }}">Riwayat</a>
                 </li>
+                @endauth
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link {{ request()->is('tentang') ? 'active' : '' }}" href="{{ route('tentang') }}">Tentang Kami</a>
-                </li>
+                </li> -->
 
+                <!-- AUTH SECTION -->
                 @auth
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-success" href="#" role="button" data-bs-toggle="dropdown">
@@ -127,6 +132,7 @@
         </div>
     </div>
 </nav>
+
 
 <!-- NOTIFIKASI -->
 <div class="container">

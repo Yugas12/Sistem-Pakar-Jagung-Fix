@@ -2,47 +2,40 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+// Model User digunakan oleh Laravel untuk sistem autentikasi bawaan
+// (login, session, middleware auth, dll).
+// Model ini tetap menggunakan tabel 'pengguna' agar sesuai dengan database yang sudah dibuat.
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    // Trait Notifiable digunakan jika ingin mengirim notifikasi
+    // seperti email verifikasi, reset password, dll.
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    // Menentukan bahwa model ini menggunakan tabel 'pengguna'
+    // (karena default Laravel seharusnya tabel 'users')
+    protected $table = 'pengguna'; // WAJIB
+
+    // Field yang boleh diisi saat registrasi atau penyimpanan data user
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'nama',       // Nama pengguna
+        'email',      // Email untuk login
+        'kata_sandi', // Password yang sudah di-hash
+        'peran',      // Role pengguna (admin / user)
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+    // Field yang disembunyikan agar tidak ikut tampil saat data dipanggil
     protected $hidden = [
-        'password',
-        'remember_token',
+        'kata_sandi',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    // Laravel secara default mencari kolom 'password'
+    // Karena di database menggunakan 'kata_sandi',
+    // maka method ini mengarahkan Laravel ke kolom yang benar.
+    public function getAuthPassword()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->kata_sandi;
     }
 }

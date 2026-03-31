@@ -57,8 +57,8 @@
             <div class="col-md-4">
                 <div class="p-4 bg-white rounded-4 shadow-sm h-100">
                     <div style="font-size:2rem;">📈</div>
-                    <h5 class="mt-3 fw-bold">Akurasi Diagnosis Tinggi</h5>
-                    <p class="text-muted mb-0">Sistem memberikan hasil analisis dengan tingkat akurasi tinggi.</p>
+                    <h5 class="mt-3 fw-bold">Tingkat Keberhasilan Sistem</h5>
+                    <p class="text-muted mb-0">Sistem mampu memberikan hasil diagnosa yang sesuai dengan aturan pengetahuan.</p>
                 </div>
             </div>
 

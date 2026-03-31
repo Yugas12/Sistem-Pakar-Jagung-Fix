@@ -3,42 +3,193 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Gejala;
+use App\Models\Penyakit;
+use App\Models\Aturan;
+use App\Models\Diagnosa;
+use App\Models\DetailDiagnosa;
 
 class DiagnosisController extends Controller
 {
+    // =========================
+    // Halaman Diagnosis
+    // =========================
     public function index()
     {
-        // daftar gejala dari tabel/gambar kamu
-        $gejala = [
-            ['kode' => 'G1', 'nama' => 'Jagung berwarna kuning'],
-            ['kode' => 'G2', 'nama' => 'Ada serbuk keputihan di batang'],
-            ['kode' => 'G3', 'nama' => 'Batang berukuran kecil / lambatnya pertumbuhan tongkol'],
-            ['kode' => 'G4', 'nama' => 'Jagung berwarna kuning'],
-            ['kode' => 'G5', 'nama' => 'Adanya warna coklat pada tengah bercak'],
-            ['kode' => 'G6', 'nama' => 'Bercak berwarna coklat kehijauan pada daun'],
-            ['kode' => 'G7', 'nama' => 'Bercak berbentuk oval'],
-            ['kode' => 'G8', 'nama' => 'Terdapat warna hitam pada bercak'],
-            ['kode' => 'G9', 'nama' => 'Banyak bercak bulat hingga lonjong pada daun'],
-            ['kode' => 'G10', 'nama' => 'Bercak berwarna kuning pada daun'],
-            ['kode' => 'G11', 'nama' => 'Berwarna coklat pada tulang daun'],
-            ['kode' => 'G12', 'nama' => 'Batang bawah berwarna coklat'],
-            ['kode' => 'G13', 'nama' => 'Batang lembah dan lunak'],
-            ['kode' => 'G14', 'nama' => 'Berbau busuk pada batang'],
-            ['kode' => 'G15', 'nama' => 'Batang mudah patah'],
-            ['kode' => 'G16', 'nama' => 'Terdapat bercak pada pelepah'],
-            ['kode' => 'G17', 'nama' => 'Bercak berwarna orange pada pelepah'],
-            ['kode' => 'G18', 'nama' => 'Terdapat bercak meluas pada pelepah'],
-        ];
-
+        $gejala = Gejala::all();
         return view('user.diagnosis', compact('gejala'));
     }
 
-    public function proses(Request $request)
+    // =========================
+    // PROSES DIAGNOSIS DENGAN FORWARD CHAINING (LOGIKA AND)
+    // =========================
+        public function proses(Request $request)
     {
-        $pilihan = $request->input('gejala', []);
+        // =========================
+        // 1. VALIDASI INPUT
+        // Pastikan user memilih minimal 1 gejala
+        // =========================
+        $request->validate([
+            'gejala' => 'required|array|min:1',
+            'gejala.*' => 'string'
+        ]);
 
-        // Sementara tampilkan hasilnya dulu (nanti bisa diolah pakai Forward Chaining)
-        return view('user.hasil', compact('pilihan'));
+        // Ambil kode gejala yang dipilih user (contoh: G1, G4, G8)
+        $kodeGejalaDipilih = $request->gejala;
 
+        // =========================
+        // 2. AMBIL DATA GEJALA DARI DATABASE
+        // =========================
+        $gejalaDipilih = Gejala::whereIn('kode', $kodeGejalaDipilih)->get();
+
+        // Jika tidak ditemukan gejala sama sekali
+        if ($gejalaDipilih->count() == 0) {
+            return view('user.hasil', [
+                'hasil' => null,
+                'pesan' => 'Gejala yang dipilih tidak ditemukan.',
+                'gejalaDipilih' => collect()
+            ]);
+        }
+
+        // Ambil ID gejala yang dipilih (dipakai untuk pencocokan rule)
+        $gejalaIds = $gejalaDipilih->pluck('id')->toArray();
+
+        // Debug log (boleh dihapus nanti)
+        \Log::info('Diagnosis - Gejala dipilih:', $gejalaIds);
+
+        // =========================
+        // 3. AMBIL SELURUH RULE (BASIS PENGETAHUAN)
+        // =========================
+        $semuaAturan = Aturan::all();
+
+        // Kelompokkan rule berdasarkan penyakit
+        // Format hasil:
+        // [penyakit_id => [gejala_id, gejala_id, ...]]
+        $aturanPerPenyakit = [];
+        foreach ($semuaAturan as $aturan) {
+            $aturanPerPenyakit[$aturan->penyakit_id][] = $aturan->gejala_id;
+        }
+
+        // =========================
+        // 4. PROSES FORWARD CHAINING
+        // Menghitung tingkat kecocokan setiap penyakit
+        // =========================
+
+        $hasil = null;                 // Penyakit terpilih
+        $persentaseTertinggi = 0;      // Nilai kecocokan terbesar
+
+        foreach ($aturanPerPenyakit as $penyakitId => $gejalaRequired) {
+
+            $totalRule = count($gejalaRequired); // jumlah gejala dalam rule
+            $jumlahCocok = 0;                   // jumlah gejala yang cocok
+
+            // Cek satu per satu apakah gejala user ada di rule
+            foreach ($gejalaRequired as $gejalaId) {
+                if (in_array($gejalaId, $gejalaIds)) {
+                    $jumlahCocok++;
+                }
+            }
+
+            // =========================
+            // HITUNG TINGKAT KECOCOKAN
+            // (jumlah cocok / total rule) × 100%
+            // =========================
+            $persentase = ($totalRule > 0)
+                ? ($jumlahCocok / $totalRule) * 100
+                : 0;
+
+            // Simpan log (untuk pembuktian perhitungan)
+            \Log::info("Perhitungan Penyakit ID {$penyakitId}", [
+                'jumlah_cocok' => $jumlahCocok,
+                'total_rule' => $totalRule,
+                'persentase' => $persentase
+            ]);
+
+            // Ambil penyakit dengan nilai kecocokan tertinggi
+            if ($persentase > $persentaseTertinggi) {
+                $persentaseTertinggi = $persentase;
+                $hasil = Penyakit::find($penyakitId);
+            }
+        }
+
+        // =========================
+        // 5. VALIDASI AMBANG MINIMAL (THRESHOLD)
+        // Agar sistem tidak mendiagnosa dari 1 gejala saja
+        // =========================
+        $threshold = 40; // Minimal kecocokan 40%
+
+        if ($persentaseTertinggi < $threshold) {
+            $hasil = null;
+
+            \Log::info('Diagnosis ditolak (kecocokan rendah)', [
+                'persentase' => $persentaseTertinggi,
+                'threshold' => $threshold
+            ]);
+        }
+
+        // =========================
+        // 6. JIKA TIDAK ADA HASIL
+        // =========================
+        if (!$hasil) {
+            return view('user.hasil', [
+                'hasil' => null,
+                'pesan' => 'Tidak ditemukan penyakit yang sesuai dengan gejala yang dipilih. Silakan pilih gejala tambahan.',
+                'gejalaDipilih' => $gejalaDipilih
+            ]);
+        }
+
+        // =========================
+        // 7. JIKA DIAGNOSIS DITEMUKAN
+        // =========================
+        return view('user.hasil', [
+            'hasil' => $hasil,
+            'gejalaDipilih' => $gejalaDipilih
+        ]);
+    }
+
+
+    // =========================
+    // SIMPAN DIAGNOSA
+    // =========================
+    public function simpan(Request $request)
+    {
+        $request->validate([
+            'penyakit_id' => 'required|integer|exists:penyakit,id',
+            'gejala_id'   => 'required|array',
+            'gejala_id.*' => 'integer|exists:gejala,id'
+        ]);
+
+        // Simpan diagnosa utama
+        $diagnosa = Diagnosa::create([
+            'pengguna_id' => Auth::id(),
+            'penyakit_id' => $request->penyakit_id,
+            'tanggal'     => now(),
+            'catatan'     => 'Diagnosa otomatis sistem'
+        ]);
+
+        // Simpan detail gejala yang dipilih
+        foreach ($request->gejala_id as $gid) {
+            DetailDiagnosa::create([
+                'diagnosa_id' => $diagnosa->id,
+                'gejala_id'   => $gid
+            ]);
+        }
+
+        return redirect()->route('riwayat')
+            ->with('success', 'Diagnosa berhasil disimpan ke riwayat.');
+    }
+
+    // =========================
+    // RIWAYAT DIAGNOSA
+    // =========================
+    public function riwayat()
+    {
+        $riwayat = Diagnosa::where('pengguna_id', Auth::id())
+            ->with(['penyakit', 'detailDiagnosa.gejala'])
+            ->orderBy('tanggal', 'desc')
+            ->get();
+
+        return view('user.riwayat', compact('riwayat'));
     }
 }
