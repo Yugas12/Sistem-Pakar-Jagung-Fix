@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('penyakit', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->string('kode')->unique();   // P1, P2, dst
+            $table->string('nama');
+            $table->text('deskripsi');
+            $table->text('solusi');
         });
     }
 
