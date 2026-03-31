@@ -17,14 +17,14 @@ class PenggunaSeeder extends Seeder
                 'id' => 1,
                 'nama' => 'Admin Pakar',
                 'email' => 'admin12@gmail.com',
-                'kata_sandi' => '$2y$12$uDifidFLQPHfDaxgeDznUeNy50q536AopuSxICVdNZZZz9PhF8qlK',
+                'kata_sandi' => 'admin123',
                 'peran' => 'admin'
             ],
             [
                 'id' => 2,
                 'nama' => 'Wahyu Bagas',
                 'email' => 'wahyubagas120903@gmail.com',
-                'kata_sandi' => '$2y$12$FuXEeqgSpZHyGjrjPNio/OAzyeFfdFlj1haPoLdKIjBX0Lp/L3jWy',
+                'kata_sandi' => 'yugas123',
                 'peran' => 'petani'
             ]
         ]);
