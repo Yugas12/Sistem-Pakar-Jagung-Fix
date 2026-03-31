@@ -17,8 +17,6 @@ return new class extends Migration
             $table->string('email', 100)->unique()->nullable();
             $table->string('kata_sandi')->nullable();
             $table->enum('peran', ['admin', 'petani'])->default('petani');
-            $table->timestamp('dibuat_pada')->nullable()->useCurrent();
-            $table->timestamp('diperbarui_pada')->nullable()->useCurrent()->useCurrentOnUpdate();
             $table->timestamps();
         });
     }

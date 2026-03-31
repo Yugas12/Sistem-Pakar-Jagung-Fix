@@ -13,8 +13,16 @@ return new class extends Migration
     {
         Schema::create('detail_diagnosa', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('diagnosa_id')->nullable()->constrained('diagnosa')->nullOnDelete();
-            $table->foreignId('gejala_id')->nullable()->constrained('gejala')->nullOnDelete();
+
+            $table->foreignId('diagnosa_id')
+                ->nullable()
+                ->constrained('diagnosa')
+                ->nullOnDelete();
+
+            $table->foreignId('gejala_id')
+                ->nullable()
+                ->constrained('gejala')
+                ->nullOnDelete();
         });
     }
 

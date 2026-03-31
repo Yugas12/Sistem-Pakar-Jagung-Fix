@@ -13,9 +13,18 @@ return new class extends Migration
     {
         Schema::create('diagnosa', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pengguna_id')->nullable()->constrained('pengguna')->nullOnDelete();
-            $table->foreignId('penyakit_id')->nullable()->constrained('penyakit')->nullOnDelete();
-            $table->dateTime('tanggal')->useCurrent();
+
+            $table->foreignId('pengguna_id')
+                ->nullable()
+                ->constrained('pengguna')
+                ->nullOnDelete();
+
+            $table->foreignId('penyakit_id')
+                ->nullable()
+                ->constrained('penyakit')
+                ->nullOnDelete();
+
+            $table->timestamp('tanggal');
         });
     }
 
