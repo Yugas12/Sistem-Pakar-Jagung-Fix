@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  siskargung_php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: siskargung-app
+    container_name: siskargung-php-container
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - siskargung-network
+      - laravel-network
+
+  siskargung_nginx:
+    image: nginx:alpine
+    container_name: siskargung-nginx-container
+    restart: unless-stopped
+    ports:
+      - "8092:80"
+    volumes:
+      - .:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - siskargung-network
+    depends_on:
+      - siskargung_php
+
+networks:
+  siskargung-network:
+    driver: bridge
+
+  laravel-network:
+    external: true
+    name: bpbd_laravel-network
