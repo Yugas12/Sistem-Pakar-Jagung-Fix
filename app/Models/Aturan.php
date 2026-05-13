@@ -5,35 +5,60 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 // Model Aturan merepresentasikan tabel 'aturan' di database
-// Tabel ini berfungsi sebagai penghubung antara penyakit dan gejala
-// dalam basis pengetahuan sistem pakar (Forward Chaining).
+// Tabel ini digunakan sebagai basis pengetahuan
+// pada sistem pakar diagnosis penyakit jagung hibrida
+// menggunakan metode Forward Chaining dan Certainty Factor.
 class Aturan extends Model
 {
-    // Menentukan nama tabel yang digunakan oleh model ini
+    // =====================================================
+    // NAMA TABEL
+    // =====================================================
     protected $table = 'aturan';
 
-    // Menonaktifkan timestamps karena tabel tidak memiliki
-    // kolom created_at dan updated_at
+    // =====================================================
+    // NONAKTIFKAN TIMESTAMP
+    // =====================================================
+    // Karena tabel aturan tidak menggunakan
+    // created_at dan updated_at
     public $timestamps = false;
 
-    // Menentukan field yang boleh diisi secara mass assignment
-    // Field ini menyimpan relasi antara penyakit dan gejala
+    // =====================================================
+    // FIELD YANG BOLEH DIISI
+    // =====================================================
+    // penyakit_id : ID penyakit
+    // gejala_id   : ID gejala
+    // cf_pakar    : Nilai keyakinan pakar
     protected $fillable = [
-        'penyakit_id', // ID penyakit yang berhubungan dengan aturan
-        'gejala_id'    // ID gejala yang menjadi syarat penyakit
+
+        'penyakit_id',
+
+        'gejala_id',
+
+        'cf_pakar'
+
     ];
 
-    // Relasi ke model Penyakit
-    // Setiap aturan hanya dimiliki oleh satu penyakit
+    // =====================================================
+    // RELASI KE PENYAKIT
+    // =====================================================
+    // Setiap aturan dimiliki oleh satu penyakit
     public function penyakit()
     {
-        return $this->belongsTo(Penyakit::class, 'penyakit_id');
+        return $this->belongsTo(
+            Penyakit::class,
+            'penyakit_id'
+        );
     }
 
-    // Relasi ke model Gejala
-    // Setiap aturan hanya terkait dengan satu gejala
+    // =====================================================
+    // RELASI KE GEJALA
+    // =====================================================
+    // Setiap aturan terhubung dengan satu gejala
     public function gejala()
     {
-        return $this->belongsTo(Gejala::class, 'gejala_id');
+        return $this->belongsTo(
+            Gejala::class,
+            'gejala_id'
+        );
     }
 }

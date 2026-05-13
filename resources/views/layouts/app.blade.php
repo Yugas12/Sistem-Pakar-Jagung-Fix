@@ -103,9 +103,9 @@
                 </li>
                 @endauth
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link {{ request()->is('tentang') ? 'active' : '' }}" href="{{ route('tentang') }}">Tentang Kami</a>
-                </li>
+                </li> -->
 
                 <!-- AUTH SECTION -->
                 @auth

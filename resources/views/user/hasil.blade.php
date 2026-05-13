@@ -38,7 +38,7 @@
                                     <div class="col-md-6 mb-2">
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-primary me-2">{{ $index + 1 }}</span>
-                                            <span>{{ $g->nama_gejala }}</span>
+                                            <span>{{ $g->nama }}</span>
                                         </div>
                                     </div>
                                 @endforeach
@@ -74,7 +74,7 @@
                                         <div class="alert alert-light d-flex align-items-center">
                                             <span class="badge bg-success me-2">{{ $index + 1 }}</span>
                                             <div>
-                                                <strong>{{ $g->kode }}</strong> - {{ $g->nama_gejala }}
+                                                <strong>{{ $g->kode }}</strong> - {{ $g->nama }}
                                             </div>
                                         </div>
                                     </div>
@@ -94,6 +94,14 @@
                                     <i class="fas fa-virus text-info fs-4 me-3 mt-1"></i>
                                     <div>
                                         <h4 class="text-success mb-2">{{ $hasil->nama }}</h4>
+                                        @if(isset($persentase))
+                                            <p class="mb-2">
+                                                <strong>Tingkat Keyakinan:</strong> 
+                                                <span class="badge bg-success">
+                                                    {{ number_format($persentase, 2) }}%
+                                                </span>
+                                            </p>
+                                        @endif
                                         <p class="mb-0">
                                             <strong>Penyakit Terdiagnosis adalah </strong> {{ $hasil->nama }}
                                         </p>
@@ -144,9 +152,18 @@
                         <form action="{{ route('diagnosa.simpan') }}" method="POST" class="mt-4">
                             @csrf
                             <input type="hidden" name="penyakit_id" value="{{ $hasil->id }}">
+                            <input type="hidden"
+                                name="cf_hasil"
+                                value="{{ isset($persentase) ? $persentase : 0 }}">
                             
                             @foreach($gejalaDipilih as $g)
-                                <input type="hidden" name="gejala_id[]" value="{{ $g->id }}">
+                                <input type="hidden"
+                                    name="gejala_id[]"
+                                    value="{{ $g->id }}">
+
+                                <input type="hidden"
+                                    name="cf_user[{{ $g->id }}]"
+                                    value="{{ request('cf_user')[$g->kode] ?? 0 }}">
                             @endforeach
 
                             <div class="d-flex justify-content-between align-items-center border-top pt-4">

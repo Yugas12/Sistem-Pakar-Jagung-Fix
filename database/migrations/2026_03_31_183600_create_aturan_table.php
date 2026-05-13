@@ -13,8 +13,25 @@ return new class extends Migration
     {
         Schema::create('aturan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('penyakit_id')->nullable()->constrained('penyakit')->nullOnDelete();
-            $table->foreignId('gejala_id')->nullable()->constrained('gejala')->nullOnDelete();
+
+            // Relasi ke tabel penyakit
+            $table->foreignId('penyakit_id')
+                  ->constrained('penyakit')
+                  ->cascadeOnDelete();
+
+            // Relasi ke tabel gejala
+            $table->foreignId('gejala_id')
+                  ->constrained('gejala')
+                  ->cascadeOnDelete();
+
+            // Nilai keyakinan pakar
+            $table->float('cf_pakar')->default(0);
+
+            // Mencegah data aturan duplikat
+            $table->unique(['penyakit_id', 'gejala_id']);
+
+            // created_at dan updated_at
+            $table->timestamps();
         });
     }
 
