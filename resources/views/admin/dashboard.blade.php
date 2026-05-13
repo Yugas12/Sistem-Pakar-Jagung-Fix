@@ -149,8 +149,17 @@
                                 {{ \Carbon\Carbon::parse($r->tanggal)->format('d/m/Y H:i:s') }}
                             </p>
 
-                            <p><strong>Penyakit:</strong>
+                            <p class="mb-1">
+                                <strong>Penyakit:</strong>
                                 {{ $r->penyakit->nama ?? '-' }}
+                            </p>
+
+                            <p>
+                                <strong>Tingkat Keyakinan:</strong>
+
+                                <span class="badge bg-success">
+                                    {{ number_format($r->cf_hasil, 2) }}%
+                                </span>
                             </p>
 
                             <p><strong>Solusi Lengkap:</strong><br>
@@ -163,8 +172,13 @@
                             <ul>
                                 @foreach($r->detailDiagnosa as $detail)
                                     <li>
-                                        {{ $detail->gejala->kode }} -
-                                        {{ $detail->gejala->nama }}
+                                        <strong>{{ $detail->gejala->kode }}</strong>
+                                        - {{ $detail->gejala->nama }}
+
+                                        <span class="badge bg-primary ms-2">
+                                            CF User:
+                                            {{ rtrim(rtrim($detail->cf_user, '0'), '.') }}
+                                        </span>
                                     </li>
                                 @endforeach
                             </ul>

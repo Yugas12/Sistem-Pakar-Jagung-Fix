@@ -9,28 +9,37 @@ use App\Models\Gejala;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-// Controller ini digunakan untuk mengelola basis aturan (knowledge base)
-// yang menghubungkan gejala dengan penyakit dalam metode Forward Chaining.
+// Controller ini digunakan untuk mengelola basis aturan
+// antara penyakit dan gejala pada metode
+// Forward Chaining + Certainty Factor.
 class AdminAturanController extends Controller
 {
-    // =======================
-    // TABEL MATRIKS
-    // =======================
-    // Menampilkan tabel matriks relasi penyakit vs gejala
-    // Digunakan admin untuk melihat aturan yang sudah terbentuk.
+    // =====================================================
+    // TAMPILKAN TABEL MATRIX ATURAN
+    // =====================================================
+    // Menampilkan relasi penyakit dan gejala
+    // dalam bentuk tabel matrix.
     public function index()
     {
-        $penyakit = Penyakit::all(); // ambil semua data penyakit
-        $gejala   = Gejala::all();   // ambil semua data gejala
+        // Ambil semua penyakit
+        $penyakit = Penyakit::all();
 
-        // Mengelompokkan aturan berdasarkan penyakit_id
-        // Hasilnya berupa mapping:
-        // penyakit_id => [gejala_id, gejala_id, ...]
-        $aturanMap = Aturan::all()
-            ->groupBy('penyakit_id')
-            ->map(function ($rows) {
-                return $rows->pluck('gejala_id')->toArray();
-            });
+        // Ambil semua gejala
+        $gejala = Gejala::all();
+
+        // Ambil semua aturan
+        $aturan = Aturan::all();
+
+        // Mapping aturan:
+        // penyakit_id => [gejala_id => cf_pakar]
+        $aturanMap = [];
+
+        foreach ($aturan as $a) {
+
+            $aturanMap[$a->penyakit_id][$a->gejala_id]
+                = $a->cf_pakar;
+
+        }
 
         return view('admin.aturan.index', compact(
             'penyakit',
@@ -40,109 +49,210 @@ class AdminAturanController extends Controller
     }
 
 
-    // =======================
-    // FORM CREATE
-    // =======================
-    // Menampilkan form untuk menambahkan aturan baru.
+    // =====================================================
+    // FORM TAMBAH ATURAN
+    // =====================================================
+    // Menampilkan halaman tambah aturan.
     public function create()
     {
         return view('admin.aturan.create', [
-            'penyakit' => Penyakit::all(), // dropdown penyakit
-            'gejala' => Gejala::all(),     // checklist gejala
+
+            // Dropdown penyakit
+            'penyakit' => Penyakit::all(),
+
+            // List gejala
+            'gejala' => Gejala::all(),
+
         ]);
     }
 
 
-    // =======================
-    // SIMPAN
-    // =======================
-    // Menyimpan aturan relasi penyakit dan gejala ke database.
+    // =====================================================
+    // SIMPAN ATURAN
+    // =====================================================
+    // Menyimpan relasi penyakit-gejala beserta CF pakar.
     public function store(Request $request)
     {
-        // Validasi input
+        // ==========================
+        // VALIDASI
+        // ==========================
         $request->validate([
+
             'penyakit_id' => 'required|exists:penyakit,id',
-            'gejala_id' => 'nullable|array'
+
+            'gejala_id' => 'nullable|array',
+
+            'cf_pakar' => 'nullable|array'
+
         ]);
 
-        // Menggunakan transaction agar data aman (rollback jika gagal)
+        // ==========================
+        // SIMPAN DATA
+        // ==========================
         DB::transaction(function () use ($request) {
 
-            // hapus rule lama jika ada (agar tidak duplikat)
-            Aturan::where('penyakit_id', $request->penyakit_id)->delete();
+            // Hapus aturan lama
+            // supaya tidak duplikat
+            Aturan::where(
+                'penyakit_id',
+                $request->penyakit_id
+            )->delete();
 
-            // simpan rule baru satu per satu
+            // Simpan aturan baru
             foreach ($request->gejala_id ?? [] as $gid) {
+
                 Aturan::create([
+
+                    // Penyakit
                     'penyakit_id' => $request->penyakit_id,
-                    'gejala_id' => $gid
+
+                    // Gejala
+                    'gejala_id' => $gid,
+
+                    // Nilai Certainty Factor Pakar
+                    'cf_pakar' => $request->cf_pakar[$gid] ?? 0
+
                 ]);
             }
+
         });
 
-        return redirect()->route('admin.aturan.index')
-            ->with('success','Aturan berhasil disimpan');
+        // Redirect kembali
+        return redirect()
+            ->route('admin.aturan.index')
+            ->with(
+                'success',
+                'Aturan berhasil disimpan'
+            );
     }
 
 
-    // =======================
-    // FORM EDIT
-    // =======================
-    // Menampilkan form edit aturan berdasarkan penyakit tertentu.
+    // =====================================================
+    // FORM EDIT ATURAN
+    // =====================================================
+    // Menampilkan aturan berdasarkan penyakit.
     public function edit($penyakitId)
     {
-        // Ambil gejala yang sudah dipilih sebelumnya
-        $selectedGejala = Aturan::where('penyakit_id', $penyakitId)
-            ->pluck('gejala_id')
-            ->toArray();
+        // ==========================
+        // GEJALA TERPILIH
+        // ==========================
+        $selectedGejala = Aturan::where(
+            'penyakit_id',
+            $penyakitId
+        )
+        ->pluck('gejala_id')
+        ->toArray();
+
+        // ==========================
+        // NILAI CF PAKAR
+        // ==========================
+        // Format:
+        // gejala_id => cf_pakar
+        $cfPakar = Aturan::where(
+            'penyakit_id',
+            $penyakitId
+        )
+        ->pluck('cf_pakar', 'gejala_id')
+        ->toArray();
 
         return view('admin.aturan.edit', [
+
+            // Semua penyakit
             'penyakit' => Penyakit::all(),
+
+            // Semua gejala
             'gejala' => Gejala::all(),
+
+            // Penyakit yang sedang diedit
             'penyakitId' => $penyakitId,
-            'selectedGejala' => $selectedGejala, // untuk checklist yang aktif
+
+            // Gejala yang aktif
+            'selectedGejala' => $selectedGejala,
+
+            // Penyakit terpilih
             'selectedPenyakit' => $penyakitId,
+
+            // Nilai CF Pakar
+            'cfPakar' => $cfPakar
+
         ]);
     }
 
 
-    // =======================
-    // UPDATE
-    // =======================
-    // Memperbarui aturan penyakit dengan mengganti relasi gejala.
+    // =====================================================
+    // UPDATE ATURAN
+    // =====================================================
+    // Mengupdate relasi penyakit dan gejala.
     public function update(Request $request, $penyakitId)
     {
+        // ==========================
+        // VALIDASI
+        // ==========================
         $request->validate([
-            'gejala_id' => 'nullable|array'
+
+            'gejala_id' => 'nullable|array',
+
+            'cf_pakar' => 'nullable|array'
+
         ]);
 
-        DB::transaction(function () use ($request, $penyakitId) {
+        DB::transaction(function () use (
+            $request,
+            $penyakitId
+        ) {
 
-            // hapus rule lama
-            Aturan::where('penyakit_id', $penyakitId)->delete();
+            // ==========================
+            // HAPUS RULE LAMA
+            // ==========================
+            Aturan::where(
+                'penyakit_id',
+                $penyakitId
+            )->delete();
 
-            // simpan rule baru
+            // ==========================
+            // SIMPAN RULE BARU
+            // ==========================
             foreach ($request->gejala_id ?? [] as $gid) {
+
                 Aturan::create([
+
+                    // Penyakit
                     'penyakit_id' => $penyakitId,
-                    'gejala_id' => $gid
+
+                    // Gejala
+                    'gejala_id' => $gid,
+
+                    // CF Pakar
+                    'cf_pakar' => $request->cf_pakar[$gid] ?? 0
+
                 ]);
             }
+
         });
 
-        return redirect()->route('admin.aturan.index')
-            ->with('success','Aturan berhasil diperbarui');
+        return redirect()
+            ->route('admin.aturan.index')
+            ->with(
+                'success',
+                'Aturan berhasil diperbarui'
+            );
     }
 
 
-    // =======================
-    // DELETE RULE PER PENYAKIT
-    // =======================
-    // Menghapus seluruh aturan yang dimiliki satu penyakit.
+    // =====================================================
+    // HAPUS SEMUA ATURAN PER PENYAKIT
+    // =====================================================
     public function deleteByPenyakit($penyakitId)
     {
-        Aturan::where('penyakit_id',$penyakitId)->delete();
+        // Hapus seluruh aturan penyakit
+        Aturan::where(
+            'penyakit_id',
+            $penyakitId
+        )->delete();
 
-        return back()->with('success','Aturan berhasil dihapus');
+        return back()->with(
+            'success',
+            'Aturan berhasil dihapus'
+        );
     }
 }

@@ -18,8 +18,13 @@ class Diagnosa extends Model
 
     // Field yang boleh diisi (mass assignment)
     protected $fillable = [
+
         'pengguna_id', // ID user yang melakukan diagnosa
         'penyakit_id', // ID penyakit hasil diagnosa
+
+        // Hasil Certainty Factor
+        'cf_hasil',
+
         'tanggal'      // Waktu diagnosa dilakukan
     ];
 
@@ -66,9 +71,11 @@ class Diagnosa extends Model
 
         // Mengambil kode gejala satu per satu
         foreach ($this->detailDiagnosa as $detail) {
+
             if ($detail->gejala) {
                 $gejalaKode[] = $detail->gejala->kode;
             }
+
         }
 
         // Menggabungkan menjadi string dipisahkan koma
@@ -78,11 +85,13 @@ class Diagnosa extends Model
     // ===============================
     // ✅ ACCESSOR SOLUSI SINGKAT
     // ===============================
-    // Menampilkan solusi penyakit dalam bentuk ringkasan (dibatasi 100 karakter)
+    // Menampilkan solusi penyakit dalam bentuk ringkasan
     public function getSolusiSingkatAttribute()
     {
         if ($this->penyakit && $this->penyakit->solusi) {
+
             return Str::limit($this->penyakit->solusi, 100);
+
         }
 
         return '-';
@@ -92,7 +101,6 @@ class Diagnosa extends Model
     // ✅ ACCESSOR FORMAT TANGGAL
     // ===============================
     // Mengubah format tanggal database menjadi format tampilan
-    // Contoh: 14/02/2026 10:30:15
     public function getTanggalFormatAttribute()
     {
         return \Carbon\Carbon::parse($this->tanggal)
